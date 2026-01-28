@@ -14,7 +14,7 @@
             color: #4A4A4A;
             margin: 0;
             display: flex;
-            justify_content: center;
+            justify-content: center;
             align-items: center;
             min-height: 100vh;
         }
@@ -46,7 +46,11 @@
             display: none;
             flex-direction: column;
             padding: 24px;
+            padding-bottom: 80px;
+            /* Prevent nav bar overlap */
             animation: fadeIn 0.3s ease;
+            overflow-y: auto;
+            /* Allow scrolling on small screens */
         }
 
         .screen.active {
