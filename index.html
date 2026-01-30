@@ -294,9 +294,10 @@
         const genAI = new GoogleGenerativeAI(API_KEY);
 
         // Supabase Configuration
+        // Supabase Configuration
         const SUPABASE_URL = 'https://ofhliqfzdbiwmwsfkrpk.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_x-l-Q-jwO6xtHxt9C2ErsA_mzO7q2X7';
-        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Initial State
         let currentDate = new Date();
