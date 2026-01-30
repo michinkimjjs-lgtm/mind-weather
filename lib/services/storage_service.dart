@@ -1,48 +1,50 @@
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/daily_mood.dart';
 
 class StorageService {
-  static const String key = 'daily_moods';
+  final _supabase = Supabase.instance.client;
 
   Future<void> saveMood(DailyMood mood) async {
-    final prefs = await SharedPreferences.getInstance();
-    List<String> moodList = prefs.getStringList(key) ?? [];
-    
-    // Check if entry for today exists and update it, or add new
-    // Simple logic: Load all, filter out same day, add new, save
-    List<DailyMood> currentMoods = moodList.map((e) => DailyMood.fromJson(jsonDecode(e))).toList();
-    
-    // Remove any existing entry for the same date (year-month-day)
-    currentMoods.removeWhere((item) => 
-      item.date.year == mood.date.year && 
-      item.date.month == mood.date.month && 
-      item.date.day == mood.date.day
-    );
-    
-    currentMoods.add(mood);
-    
-    // convert back to string list
-    List<String> newMoodList = currentMoods.map((e) => jsonEncode(e.toJson())).toList();
-    await prefs.setStringList(key, newMoodList);
+    await _supabase.from('diaries').insert({
+      'content': mood.moodText,
+      'mood': mood.weatherType,
+      'created_at': mood.date.toUtc().toIso8601String(),
+    });
   }
 
   Future<List<DailyMood>> loadMoods() async {
-    final prefs = await SharedPreferences.getInstance();
-    List<String> moodList = prefs.getStringList(key) ?? [];
-    return moodList.map((e) => DailyMood.fromJson(jsonDecode(e))).toList();
+    final response = await _supabase
+        .from('diaries')
+        .select()
+        .order('created_at', ascending: false);
+
+    return (response as List).map((e) => DailyMood(
+          date: DateTime.parse(e['created_at']).toLocal(),
+          moodText: e['content'],
+          weatherType: e['mood'],
+        )).toList();
   }
-  
+
   Future<DailyMood?> getMoodForDate(DateTime date) async {
-    final moods = await loadMoods();
-    try {
-      return moods.firstWhere((item) => 
-        item.date.year == date.year && 
-        item.date.month == date.month && 
-        item.date.day == date.day
-      );
-    } catch (e) {
-      return null;
-    }
+    // Search for entries that fall within the local day (00:00 to 24:00 Local)
+    // Convert these boundaries to UTC for the detailed query
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final nextDay = DateTime(date.year, date.month, date.day + 1);
+
+    final response = await _supabase
+        .from('diaries')
+        .select()
+        .gte('created_at', startOfDay.toUtc().toIso8601String())
+        .lt('created_at', nextDay.toUtc().toIso8601String())
+        .limit(1)
+        .maybeSingle();
+
+    if (response == null) return null;
+
+    return DailyMood(
+      date: DateTime.parse(response['created_at']).toLocal(),
+      moodText: response['content'],
+      weatherType: response['mood'],
+    );
   }
 }

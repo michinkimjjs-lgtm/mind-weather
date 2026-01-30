@@ -282,36 +282,81 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module">
         import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
         const API_KEY = "AIzaSyDEeHRj5MFU6SKX6p5zxozIa8EnwpFBCxU"; // The key provided
         const genAI = new GoogleGenerativeAI(API_KEY);
 
+        // Supabase Configuration
+        const SUPABASE_URL = 'https://ofhliqfzdbiwmwsfkrpk.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_x-l-Q-jwO6xtHxt9C2ErsA_mzO7q2X7';
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         // Initial State
         let currentDate = new Date();
         let currentMoodData = {};
 
-        // Helper: Load data safely
-        function loadData() {
+        // Helper: Load data from Supabase
+        async function loadData() {
             try {
-                const data = localStorage.getItem('mind_weather_data');
+                const { data, error } = await supabase
+                    .from('diaries')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                // Transform list to map: { "YYYY-MM-DD": { type, text } }
+                currentMoodData = {};
                 if (data) {
-                    currentMoodData = JSON.parse(data);
+                    data.forEach(entry => {
+                        // created_at is UTC ISO string. 
+                        // We want local date string for the calendar key.
+                        const localDate = new Date(entry.created_at);
+                        const year = localDate.getFullYear();
+                        const month = String(localDate.getMonth() + 1).padStart(2, '0');
+                        const day = String(localDate.getDate()).padStart(2, '0');
+                        const dateStr = `${year}-${month}-${day}`;
+
+                        // Only keep the latest one per day if duplicates exist (though UI prevents easy dupes)
+                        if (!currentMoodData[dateStr]) {
+                            currentMoodData[dateStr] = {
+                                type: entry.mood,
+                                text: entry.content
+                            };
+                        }
+                    });
                 }
+                renderCalendar();
             } catch (e) {
-                console.warn("로컬 저장소를 사용할 수 없습니다 (file:// 보안 정책 등):", e);
+                console.error("Supabase Load Error:", e);
             }
         }
 
-        // Helper: Save data safely
-        function saveData(dateStr, type, text) {
+        // Helper: Save data to Supabase
+        async function saveData(dateStr, type, text) {
             try {
-                currentMoodData[dateStr] = { type, text };
-                localStorage.setItem('mind_weather_data', JSON.stringify(currentMoodData));
-                renderCalendar();
+                // We use current time for created_at, but we might want to respect the dateStr if editing past?
+                // For simplicity, we just insert a new record with current timestamp (UTC).
+                const { error } = await supabase
+                    .from('diaries')
+                    .insert({
+                        content: text,
+                        mood: type,
+                        // created_at will default to now() in DB, which is UTC
+                    });
+
+                if (error) throw error;
+
+                alert("저장되었습니다!");
+
+                // Reload data to reflect change
+                await loadData();
             } catch (e) {
-                alert("브라우저 보안 설정으로 인해 저장이 제한될 수 있습니다.");
+                console.error("Supabase Save Error:", e);
+                alert("저장에 실패했습니다: " + e.message);
             }
         }
 

@@ -65,14 +65,47 @@ class ResultScreen extends StatelessWidget {
               const SizedBox(height: 50),
               ElevatedButton(
                 onPressed: () async {
-                  final storage = context.read<StorageService>();
-                  await storage.saveMood(DailyMood(
-                    date: DateTime.now(),
-                    moodText: moodText,
-                    weatherType: weatherType,
-                  ));
-                  if (context.mounted) {
-                    Navigator.popUntil(context, (route) => route.isFirst);
+                  print("Save button clicked");
+                  try {
+                    final storage = context.read<StorageService>();
+                    print("Calling saveMood...");
+                    
+                    await storage.saveMood(DailyMood(
+                      date: DateTime.now(),
+                      moodText: moodText,
+                      weatherType: weatherType,
+                    ));
+                    
+                    print("saveMood completed successfully");
+                    
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('저장되었습니다'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                      Navigator.popUntil(context, (route) => route.isFirst);
+                    }
+                  } catch (e, stackTrace) {
+                    print("Error saving mood: $e");
+                    print(stackTrace);
+                    
+                    if (context.mounted) {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('저장 실패'),
+                          content: Text('오류가 발생했습니다:\n$e'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(),
+                              child: const Text('확인'),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
                   }
                 },
                 style: ElevatedButton.styleFrom(
