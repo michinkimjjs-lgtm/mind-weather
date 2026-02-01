@@ -10,7 +10,7 @@
 
         body {
             font-family: 'Pretendard', sans-serif;
-            background-color: #FFF9F0;
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
             color: #4A4A4A;
             margin: 0;
             display: flex;
@@ -18,16 +18,52 @@
             align-items: center;
             min-height: 100vh;
             min-height: 100dvh;
+            transition: background 1s ease;
+        }
+
+        /* Dynamic Backgrounds */
+        body.sunny {
+            background: linear-gradient(120deg, #f6d365 0%, #fda085 100%);
+        }
+
+        body.cloudy {
+            background: linear-gradient(to top, #cfd9df 0%, #e2ebf0 100%);
+        }
+
+        body.rainy {
+            background: linear-gradient(to top, #30cfd0 0%, #330867 100%);
+            color: white;
+        }
+
+        body.stormy {
+            background: linear-gradient(to top, #232526, #414345);
+            color: white;
+        }
+
+        body.snowy {
+            background: linear-gradient(to top, #e6e9f0 0%, #eef1f5 100%);
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
         }
 
         .app-container {
             width: 100%;
             max-width: 400px;
-            background-color: #FFF9F0;
+            background: rgba(255, 255, 255, 0.6);
+            /* Semi-transparent base */
+            backdrop-filter: blur(10px);
             height: 100vh;
             height: 100dvh;
             max-height: 850px;
             position: relative;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
             display: flex;
             flex-direction: column;
@@ -155,23 +191,55 @@
             margin-bottom: 50px;
         }
 
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #AEC6CF;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
+        /* Cloud Loader */
+        .loader-cloud {
+            width: 50px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 100px;
+            position: relative;
+            margin: 10px auto;
+            animation: pulse-cloud 1.5s ease-in-out infinite;
         }
 
-        @keyframes spin {
+        .loader-cloud:after,
+        .loader-cloud:before {
+            content: '';
+            position: absolute;
+            background: inherit;
+        }
+
+        .loader-cloud:after {
+            width: 20px;
+            height: 20px;
+            top: -10px;
+            left: 8px;
+            border-radius: 100px;
+        }
+
+        .loader-cloud:before {
+            width: 25px;
+            height: 25px;
+            top: -15px;
+            right: 5px;
+            border-radius: 100px;
+        }
+
+        @keyframes pulse-cloud {
             0% {
-                transform: rotate(0deg);
+                transform: scale(1);
+                opacity: 0.8;
+            }
+
+            50% {
+                transform: scale(1.1);
+                opacity: 1;
+                box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
             }
 
             100% {
-                transform: rotate(360deg);
+                transform: scale(1);
+                opacity: 0.8;
             }
         }
 
@@ -242,11 +310,31 @@
 
         <!-- Input Screen -->
         <div id="inputScreen" class="screen active">
-            <h2>오늘 하루는 어땠나요?</h2>
-            <textarea id="diaryInput" placeholder="여기에 솔직한 마음을 적어주세요..."></textarea>
+            <!-- Daily Question -->
+            <div id="dailyQuestion" style="margin-bottom: 15px; font-size: 18px; color: #555; font-weight: 500;">
+                오늘 하루, 가장 기억에 남는 순간은 언제였나요?
+            </div>
+
+            <!-- Mood Primer -->
+            <div class="mood-primer"
+                style="display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom:5px;">
+                <button onclick="setMoodPrimer('sunny')"
+                    style="font-size:24px; border:none; background:none; cursor:pointer; opacity: 0.7;">😊</button>
+                <button onclick="setMoodPrimer('cloudy')"
+                    style="font-size:24px; border:none; background:none; cursor:pointer; opacity: 0.7;">😐</button>
+                <button onclick="setMoodPrimer('rainy')"
+                    style="font-size:24px; border:none; background:none; cursor:pointer; opacity: 0.7;">😢</button>
+                <button onclick="setMoodPrimer('stormy')"
+                    style="font-size:24px; border:none; background:none; cursor:pointer; opacity: 0.7;">😡</button>
+                <button onclick="setMoodPrimer('snowy')"
+                    style="font-size:24px; border:none; background:none; cursor:pointer; opacity: 0.7;">😌</button>
+            </div>
+
+            <textarea id="diaryInput" class="glass-panel" placeholder="여기에 솔직한 마음을 적어주세요..."
+                style="background: rgba(255,255,255,0.4);"></textarea>
             <button class="btn" onclick="analyzeMood()">
                 <span id="btnText">마음 날씨 분석하기</span>
-                <div id="loader" class="loader" style="display: none;"></div>
+                <div id="loader" class="loader-cloud" style="display: none;"></div>
             </button>
         </div>
 
@@ -265,13 +353,24 @@
 
         <!-- Calendar Screen -->
         <div id="calendarScreen" class="screen" style="padding-bottom: 70px;">
-            <div class="calendar-header">
-                <button onclick="changeMonth(-1)" style="border:none; background:none; cursor:pointer;">&lt;</button>
+            <div class="calendar-header glass-panel" style="padding: 10px 20px; margin-bottom: 20px;">
+                <button onclick="changeMonth(-1)"
+                    style="border:none; background:none; cursor:pointer; font-size:18px;">&lt;</button>
                 <span id="monthLabel">2024년 1월</span>
-                <button onclick="changeMonth(1)" style="border:none; background:none; cursor:pointer;">&gt;</button>
+                <button onclick="changeMonth(1)"
+                    style="border:none; background:none; cursor:pointer; font-size:18px;">&gt;</button>
             </div>
-            <div class="calendar-grid" id="calendarGrid">
-                <!-- JS will populate this -->
+
+            <div class="glass-panel" style="padding: 15px; margin-bottom: 20px;">
+                <div class="calendar-grid" id="calendarGrid">
+                    <!-- JS will populate this -->
+                </div>
+            </div>
+
+            <!-- Monthly Report -->
+            <div id="monthlyReport" class="glass-panel" style="padding: 15px; font-size: 14px; color: #555;">
+                <div style="font-weight: bold; margin-bottom: 10px;">이번 달의 마음 날씨</div>
+                <div id="moodSummary" style="display: flex; gap: 10px; flex-wrap: wrap;"></div>
             </div>
         </div>
 
@@ -441,6 +540,9 @@
             const icon = document.getElementById('resultIcon');
             const label = document.getElementById('resultText');
 
+            // Sync background with result
+            document.body.className = type;
+
             icon.src = `assets/images/${type}.png`;
 
             const labels = {
@@ -491,33 +593,76 @@
                 grid.appendChild(document.createElement('div'));
             }
 
+            // Counts for report
+            const counts = { 'sunny': 0, 'cloudy': 0, 'rainy': 0, 'stormy': 0, 'snowy': 0 };
+
             // Days
             for (let i = 1; i <= daysInMonth; i++) {
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
                 const cell = document.createElement('div');
                 cell.className = 'day-cell';
+                cell.onclick = () => { if (currentMoodData[dateStr]) alert(currentMoodData[dateStr].text); };
 
                 const dayNum = document.createElement('span');
                 dayNum.innerText = i;
                 cell.appendChild(dayNum);
 
                 if (currentMoodData[dateStr]) {
+                    const type = currentMoodData[dateStr].type;
+                    counts[type] = (counts[type] || 0) + 1;
+
+                    // Heatmap background
+                    const bgColors = {
+                        'sunny': '#fff5e6', 'cloudy': '#f0f4f8', 'rainy': '#e0f7fa',
+                        'stormy': '#eceff1', 'snowy': '#f1f8e9'
+                    };
+                    cell.style.backgroundColor = bgColors[type] || 'transparent';
+                    cell.style.borderRadius = '10px';
+
                     const img = document.createElement('img');
-                    img.src = `assets/images/${currentMoodData[dateStr].type}.png`;
+                    img.src = `assets/images/${type}.png`;
                     img.className = 'day-icon';
-                    img.title = currentMoodData[dateStr].text;
                     cell.appendChild(img);
 
-                    // Adjust number position for readability
                     dayNum.style.fontSize = '10px';
                     dayNum.style.position = 'absolute';
                     dayNum.style.top = '2px';
-                    dayNum.style.left = '2px';
-                    dayNum.style.color = '#888';
+                    dayNum.style.left = '5px';
+                    dayNum.style.color = '#555';
                 }
 
                 grid.appendChild(cell);
             }
+
+            // Render Report
+            const summaryEl = document.getElementById('moodSummary');
+            summaryEl.innerHTML = '';
+            const labels = {
+                'sunny': '행복', 'cloudy': '평범', 'rainy': '우울',
+                'stormy': '화남', 'snowy': '평온'
+            };
+
+            // Calculate max to find dominant mood
+            let maxType = 'sunny';
+            let maxVal = -1;
+
+            ['sunny', 'cloudy', 'rainy', 'stormy', 'snowy'].forEach(type => {
+                if (counts[type] > 0) {
+                    const pill = document.createElement('span');
+                    pill.innerText = `${labels[type]} ${counts[type]}일`;
+                    pill.style.background = 'rgba(255,255,255,0.5)';
+                    pill.style.padding = '5px 10px';
+                    pill.style.borderRadius = '15px';
+                    pill.style.fontSize = '12px';
+                    summaryEl.appendChild(pill);
+
+                    if (counts[type] > maxVal) { maxVal = counts[type]; maxType = type; }
+                }
+            });
+
+            // Set background to dominant mood of the month if in Calendar view? 
+            // Maybe not, might be confusing if user came from a specific result interaction.
+            // Let's keep the manual background switch or default.
         }
 
         window.changeMonth = function (delta) {
@@ -542,9 +687,33 @@
             }
         }
 
+        // Mood Primer Logic
+        window.setMoodPrimer = function (mood) {
+            document.body.className = mood; // Change background immediately
+            // Highlight selected icon
+            const map = { 'sunny': 0, 'cloudy': 1, 'rainy': 2, 'stormy': 3, 'snowy': 4 };
+            const buttons = document.querySelectorAll('.mood-primer button');
+            buttons.forEach(b => { b.style.opacity = '0.5'; b.style.transform = 'scale(1)'; });
+
+            if (map[mood] !== undefined) {
+                buttons[map[mood]].style.opacity = '1.0';
+                buttons[map[mood]].style.transform = 'scale(1.2)';
+            }
+        }
+
         // Init
         loadData();
         renderCalendar();
+
+        // Random Daily Question
+        const questions = [
+            "오늘 하루, 가장 기억에 남는 순간은 언제였나요?",
+            "지금 떠오르는 감정을 색깔로 표현한다면?",
+            "오늘 나에게 해주고 싶은 위로의 말은?",
+            "최근에 가장 감사했던 일은 무엇인가요?",
+            "오늘 당신을 미소 짓게 만든 것은?"
+        ];
+        document.getElementById('dailyQuestion').innerText = questions[Math.floor(Math.random() * questions.length)];
 
     </script>
 
