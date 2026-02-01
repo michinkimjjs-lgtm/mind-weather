@@ -55,13 +55,15 @@
 
         .app-container {
             width: 100%;
-            max-width: 400px;
+            max-width: 450px;
+            /* Slightly wider */
             background: rgba(255, 255, 255, 0.6);
             /* Semi-transparent base */
             backdrop-filter: blur(10px);
             height: 100vh;
             height: 100dvh;
-            max-height: 850px;
+            /* Remove max-height to fit screen better on mobile web or make responsive */
+            /* max-height: 850px; */
             position: relative;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
@@ -106,7 +108,12 @@
         /* Text Area */
         textarea {
             width: 100%;
-            flex: 1;
+            /* flex: 1;  Removed to prevent pushing button off screen */
+            height: 200px;
+            /* Fixed height or min-height */
+            flex-grow: 1;
+            /* Allow growing but control it */
+            min-height: 150px;
             border: none;
             padding: 20px;
             border-radius: 20px;
@@ -306,7 +313,11 @@
 <body>
 
     <div class="app-container">
-        <div class="app-bar">Mind Weather</div>
+        <!-- Particle Canvas -->
+        <canvas id="weatherCanvas"
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0;"></canvas>
+
+        <div class="app-bar" style="position: relative; z-index: 1;">Mind Weather</div>
 
         <!-- Input Screen -->
         <div id="inputScreen" class="screen active">
@@ -699,11 +710,97 @@
                 buttons[map[mood]].style.opacity = '1.0';
                 buttons[map[mood]].style.transform = 'scale(1.2)';
             }
+
+            // Trigger Particles
+            initParticles(mood);
+        }
+
+        // Particle System
+        const canvas = document.getElementById('weatherCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let animationId;
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function createParticle(type) {
+            const x = Math.random() * canvas.width;
+            const y = type === 'snowy' || type === 'rainy' ? -10 : Math.random() * canvas.height;
+
+            if (type === 'sunny') {
+                return { x, y, size: Math.random() * 3, speedX: Math.random() * 0.5 - 0.25, speedY: Math.random() * 0.5 - 0.25, color: 'rgba(255, 255, 200, 0.5)' };
+            } else if (type === 'rainy' || type === 'stormy') {
+                return { x, y, size: Math.random() * 2 + 10, speedX: 0, speedY: Math.random() * 5 + 10, color: 'rgba(174, 194, 207, 0.6)' };
+            } else if (type === 'snowy') {
+                return { x, y, size: Math.random() * 3 + 2, speedX: Math.random() * 1 - 0.5, speedY: Math.random() * 2 + 1, color: 'rgba(255, 255, 255, 0.8)' };
+            } else { // Cloudy/Default
+                return { x, y, size: Math.random() * 20 + 20, speedX: Math.random() * 0.5 - 0.25, speedY: 0, color: 'rgba(255, 255, 255, 0.1)' };
+            }
+        }
+
+        function initParticles(type) {
+            cancelAnimationFrame(animationId);
+            particles = [];
+            let count = 0;
+            if (type === 'sunny') count = 20;
+            else if (type === 'rainy' || type === 'stormy') count = 100;
+            else if (type === 'snowy') count = 50;
+            else if (type === 'cloudy') count = 10;
+
+            for (let i = 0; i < count; i++) {
+                particles.push(createParticle(type));
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                particles.forEach((p, i) => {
+                    p.x += p.speedX;
+                    p.y += p.speedY;
+
+                    // Reset
+                    if (type === 'rainy' || type === 'stormy') {
+                        if (p.y > canvas.height) p.y = -10;
+                        ctx.strokeStyle = p.color;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        // Draw rain drop line
+                        ctx.lineTo(p.x, p.y + p.size);
+                        ctx.stroke();
+                    } else if (type === 'snowy') {
+                        if (p.y > canvas.height) p.y = -10;
+                        ctx.fillStyle = p.color;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else if (type === 'sunny' || type === 'cloudy') {
+                        if (p.x > canvas.width) p.x = 0;
+                        if (p.x < 0) p.x = canvas.width;
+                        if (p.y > canvas.height) p.y = 0;
+                        if (p.y < 0) p.y = canvas.height;
+
+                        ctx.fillStyle = p.color;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                });
+
+                animationId = requestAnimationFrame(animate);
+            }
+            animate();
         }
 
         // Init
         loadData();
         renderCalendar();
+        initParticles('cloudy'); // Default start
 
         // Random Daily Question
         const questions = [
